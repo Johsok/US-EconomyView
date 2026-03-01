@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Johsok 美國總體經濟數據 | Macro Data Terminal</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-color: #58a6ff;
+            --hover-bg: #21262d;
+            --neg-color: #f85149;
+            --pos-color: #42b883;
+            --change-color: #ff9f43; /* 橘色 */
+            --tooltip-bg: rgba(22, 27, 34, 0.95);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        /* --- 修改1: 讓 Container 寬度緊貼內容 (表格)，解決標題太左邊的問題 --- */
+        .container {
+            width: fit-content; /* 寬度依內容而定 */
+            max-width: 100%;
+            margin: 0 auto;     /* 整體置中 */
+            display: flex;      /* 使用 Flex 佈局 */
+            flex-direction: column; /* 垂直排列 */
+        }
+
+        header {
+            margin-bottom: 25px;
+            border-left: 5px solid var(--accent-color);
+            padding-left: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%; /* 確保標題列佔滿容器(也就是表格)的寬度 */
+            box-sizing: border-box; /* 確保 padding 不會撐大寬度 */
+        }
+
+        .header-left h2 {
+            margin: 0;
+            color: var(--accent-color);
+            letter-spacing: 1.5px;
+            font-size: 26px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 6px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .filter-group:hover { border-color: var(--accent-color); }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .filter-item label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .filter-item input[type="month"] {
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        .filter-item input[type="month"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .table-wrapper {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow-x: auto; 
+            padding-bottom: 100px;
+            width: 100%; /* 填滿 Container */
+        }
+
+        table {
+            width: auto;
+            margin: 0 auto;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px; /* 稍微增加水平 padding 讓大字體不擁擠 */
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        th {
+            font-size: 14px; /* 表頭稍微加大一點點以匹配內文 */
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- 修改2: 表格內容字體加大 2px (13px -> 15px) --- */
+        td {
+            font-family: 'Consolas', monospace;
+            font-size: 15px; 
+            color: var(--text-secondary);
+        }
+
+        .cat-header {
+            background-color: #0d1117;
+            color: var(--accent-color);
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 10px;
+        }
+
+        .sub-header {
+            background-color: var(--panel-bg);
+            cursor: help;
+            transition: background 0.2s;
+            height: 50px; /* 稍微增高以容納大字體 */
+            vertical-align: middle;
+        }
+
+        .sub-header:hover { 
+            background-color: var(--hover-bg); 
+            z-index: 20; 
+        }
+
+        .en-name { display: block; font-weight: bold; color: #fff; margin-bottom: 3px; font-size: 13px; }
+        
+        /* --- 修改3: 中文副標題改為橘色 --- */
+        .zh-name { 
+            display: block; 
+            font-size: 12px; /* 配合整體稍微加大 */
+            color: var(--change-color); /* 使用橘色變數 #ff9f43 */
+            transform: scale(0.95); 
+            font-weight: bold;
+        }
+
+        /* 彈窗樣式 */
+        .desc-popup {
+            visibility: hidden;
+            width: 320px;
+            background-color: var(--tooltip-bg);
+            backdrop-filter: blur(10px);
+            color: #adbac7;
+            border-radius: 8px;
+            padding: 0;
+            position: absolute;
+            z-index: 9999;
+            top: 100%;
+            margin-top: 10px; 
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            font-size: 13px; /* 彈窗文字也稍微加大 */
+            line-height: 1.5;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            white-space: normal;
+            text-align: left;
+            pointer-events: none;
+        }
+
+        .popup-header {
+            background: rgba(88, 166, 255, 0.1);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
+        }
+        .popup-title { color: var(--accent-color); font-size: 14px; font-weight: bold; display: block; }
+        .popup-meta { color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
+
+        .popup-body { padding: 12px 15px; }
+        .popup-section { margin-bottom: 12px; }
+        .popup-section:last-child { margin-bottom: 0; }
+        
+        .section-title { 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            margin-bottom: 4px;
+            color: #fff;
+        }
+        .text-impact { color: #ff7b72; }
+        .text-econ { color: #d2a8ff; }
+
+        .sub-header:hover .desc-popup { 
+            visibility: visible; 
+            opacity: 1; 
+            transform: translateX(-50%) translateY(5px);
+        }
+
+        th.sub-header:nth-child(-n+3) .desc-popup { 
+            left: 0; 
+            transform: translateX(0); 
+            border-left: 2px solid var(--accent-color);
+        }
+        th.sub-header:nth-child(-n+3):hover .desc-popup {
+            transform: translateX(0) translateY(5px);
+        }
+
+        th.sub-header:nth-last-child(-n+3) .desc-popup { 
+            left: auto; 
+            right: 0; 
+            transform: translateX(0); 
+            border-right: 2px solid var(--accent-color);
+        }
+        th.sub-header:nth-last-child(-n+3):hover .desc-popup {
+            transform: translateX(0) translateY(5px);
+        }
+
+        .date-col {
+            background-color: #0d1117;
+            font-weight: bold;
+            color: var(--accent-color);
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            border-right: 2px solid var(--border-color);
+        }
+
+        .changed-val {
+            color: #fff !important;
+            font-weight: bold !important;
+        }
+
+        .yoy-label {
+            display: block;
+            font-size: 11px; /* 加大 1px */
+            margin-top: 1px;
+        }
+
+        .unit-label {
+            font-size: 11px; /* 加大 1px */
+            color: var(--text-secondary);
+            margin-left: 1px;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 80px;
+            color: var(--accent-color);
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-left">
+            <h2>Johsok 美國總體經濟數據</h2>
+            <div class="subtitle">MACRO DATA TERMINAL</div>
+        </div>
+        
+        <div class="filter-group" id="filterContainer">
+            <div class="filter-item">
+                <label for="startDate">日期範圍:</label>
+                <input type="month" id="startDate">
+            </div>
+            <span style="color:var(--text-secondary)">—</span>
+            <div class="filter-item">
+                <input type="month" id="endDate">
+            </div>
+        </div>
+    </header>
+
+    <div class="table-wrapper">
+        <div id="loading">📡 STREAMING DATA FROM FRED...</div>
+        
+        <table id="macroTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="cat-header">日期</th>
+                    <th colspan="3" class="cat-header">Inflation (通膨)</th>
+                    <th colspan="4" class="cat-header">Rates & Bonds (利率)</th>
+                    <th colspan="2" class="cat-header">Growth (增長)</th>
+                    <th colspan="2" class="cat-header">Labor (就業)</th>
+                    <th colspan="2" class="cat-header">Sentiment (情緒)</th>
+                </tr>
+                <tr>
+                    <th class="sub-header">
+                        <span class="en-name">CPI</span><span class="zh-name">消費者物價</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">消費者物價指數 (CPI)</span>
+                                <span class="popup-meta">頻率：每月 | 單位：年增率/月增率</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    衡量都市消費者購買商品和服務的價格變化，是通膨最直觀的指標。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    數據<b>高於預期</b>通常引發升息恐慌，導致科技股與債券價格下跌；<b>低於預期</b>則利好風險資產。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    反映貨幣購買力。持續高通膨會侵蝕消費能力，迫使央行採取緊縮政策。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">PCE</span><span class="zh-name">個人消費支出</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">PCE 物價指數</span>
+                                <span class="popup-meta">頻率：每月 | 關注：Fed 首選指標</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    Fed 制定貨幣政策最看重的指標。不同於 CPI，PCE 考慮了消費者因價格變動而產生的「替代效應」，範圍更廣。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    市場解讀 Fed 轉向（Pivot）的核心依據。數據降溫確認通膨受控，利多大盤。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    直接反映家戶實際開支壓力與消費模式改變。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">M2</span><span class="zh-name">貨幣供給量</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">M2 貨幣供給</span>
+                                <span class="popup-meta">頻率：每月 | 單位：十億美元</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    包含現金、活期存款以及易於變現的金融資產（如定存）。代表市場上的「資金總量」。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    M2 增加代表市場流動性充沛，利好資產價格（水漲船高）；M2 緊縮則對股市估值構成壓力。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    長期通膨的潛在推手。M2 劇烈負增長通常是經濟衰退的領先指標。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Fed Funds</span><span class="zh-name">基準利率</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">聯邦基金利率 (EFFR)</span>
+                                <span class="popup-meta">頻率：每日/FOMC決議 | 單位：百分比</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    美國銀行同業拆借市場的隔夜利率，是全球金融體系資金成本的基石。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    利率升 ➔ 企業借貸成本增、估值模型折現率升 ➔ 股價下跌（尤其是高本益比成長股）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    Fed 調控經濟冷熱的槓桿，透過影響借貸成本來控制通膨與就業。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">US 10Y</span><span class="zh-name">10Y美債</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">10年期美債殖利率</span>
+                                <span class="popup-meta">頻率：即時 | 意義：全球資產定價之錨</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    被視為「無風險利率」，是所有金融資產定價的基準線。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    殖利率飆升會對股市造成巨大回檔壓力（資金轉向債市）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    反映市場對未來長期的經濟增長與通膨預期。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">US 2Y</span><span class="zh-name">2Y美債</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">2年期美債殖利率</span>
+                                <span class="popup-meta">頻率：即時 | 意義：政策利率風向球</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    對 Fed 貨幣政策最敏感的債券殖利率。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    快速上升預示著市場預期 Fed 將緊縮政策，對短期資金成本影響大。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    若 2Y 利率高於 10Y（倒掛），代表市場認為央行過度緊縮將導致衰退。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Spread</span><span class="zh-name">10Y-2Y利差</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">10Y-2Y 公債利差</span>
+                                <span class="popup-meta">狀態：負值為倒掛 | 意義：衰退警鐘</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    長債殖利率減去短債殖利率。正常應為正值（長債風險高，利率應較高）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    「倒掛」（負值）是過去50年最準確的經濟衰退預測指標。倒掛期間股市波動劇烈。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    反映銀行借短放長的利潤空間被壓縮，導致信貸緊縮，經濟活動放緩。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">GDP</span><span class="zh-name">實質GDP</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">實質國內生產毛額</span>
+                                <span class="popup-meta">頻率：每季 | 單位：年化季增率</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    扣除通膨影響後，一個國家在特定時期內生產的所有最終商品和服務的總價值。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    強勁增長支撐企業盈餘（EPS）。最理想是「金髮姑娘」狀態（適度增長且通膨溫和）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    國家經濟健康的最終成績單。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Ind Prod</span><span class="zh-name">工業生產</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">工業生產指數</span>
+                                <span class="popup-meta">頻率：每月 | 範圍：製造/礦業/公用事業</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    衡量實體經濟產出的數量變化，不包含價格波動。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    與景氣循環股（工業、能源、原物料）高度正相關。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    雖然服務業佔比高，但工業生產對景氣轉折更敏感，是經濟周期的同步指標。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Unemploy</span><span class="zh-name">失業率</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">失業率 (U3)</span>
+                                <span class="popup-meta">頻率：每月 | 意義：痛苦指數</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    勞動力中正在尋找工作但未被雇用的人口比例。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    數據太低（勞動市場過熱）引發通膨擔憂；數據突然跳升則代表衰退將至（薩姆規則）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    消費支出的根本。失業率上升通常會導致消費銳減。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Non-Farm</span><span class="zh-name">非農就業</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">非農就業人口變動 (NFP)</span>
+                                <span class="popup-meta">頻率：每月 | 關注：No.1 市場震撼彈</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    全美除農業以外的新增就業人數。每月第一個週五公布。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    大幅優於預期可能引發 Fed 鷹派升息預期（股跌）；大幅低於預期則擔憂經濟硬著陸。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    經濟增長的最直接引擎。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">VIX</span><span class="zh-name">恐慌指數</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">CBOE 波動率指數 (VIX)</span>
+                                <span class="popup-meta">頻率：即時 | 別名：恐慌指數</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    透過 S&P 500 選擇權價格計算出的未來30天預期波動率。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    與股市呈高度反向。VIX < 20 代表市場安逸；VIX > 30 代表極度恐慌（通常是買點）。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    金融市場避險情緒的溫度計，反映系統性風險的可能性。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+
+                    <th class="sub-header">
+                        <span class="en-name">Sentiment</span><span class="zh-name">消費者信心</span>
+                        <div class="desc-popup">
+                            <div class="popup-header">
+                                <span class="popup-title">密西根大學消費者信心</span>
+                                <span class="popup-meta">頻率：每月 | 類型：軟數據(調查)</span>
+                            </div>
+                            <div class="popup-body">
+                                <div class="popup-section">
+                                    透過電話調查消費者對個人財務狀況與經濟前景的看法。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-impact">📊 股市影響</span>
+                                    信心增強有利於非必需消費品（Discretionary）板塊。
+                                </div>
+                                <div class="popup-section">
+                                    <span class="section-title text-econ">🏛 經濟意義</span>
+                                    消費佔美國 GDP 70%，信心的波動通常領先於實際消費行為。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let rawMacroData = [];
+    let globalLatestDateStr = ""; 
+
+    const columnOrder = [
+        'Date', 'CPI', 'PCE', 'M2', 
+        'Fed_Funds', 'US_10Y', 'US_2Y', 'Yield_Spread',
+        'GDP', 'Ind_Prod', 
+        'Unemployment', 'Non_Farm', 
+        'VIX', 'Sentiment'
+    ];
+
+    const pctColumns = ['Fed_Funds', 'US_10Y', 'US_2Y', 'Yield_Spread', 'Unemployment'];
+    const intColumns = ['M2', 'GDP', 'Non_Farm'];
+
+    function calculateYoYAndChanges(data) {
+        const sorted = [...data].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        if(sorted.length > 0) {
+            globalLatestDateStr = sorted[sorted.length - 1].Date;
+        }
+
+        return sorted.map((item, index) => {
+            const newItem = { ...item, _yoy: {}, _isMoMChanged: {} };
+            const prevItem = index > 0 ? sorted[index - 1] : null;
+
+            columnOrder.forEach(key => {
+                if (key === 'Date') return;
+
+                if (prevItem && item[key] !== null && prevItem[key] !== null) {
+                    if (parseFloat(item[key]) !== parseFloat(prevItem[key])) {
+                        newItem._isMoMChanged[key] = true;
+                    }
+                }
+
+                const currentDate = new Date(item.Date);
+                const targetMonth = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1);
+                const yoyPrevItem = sorted.find(d => {
+                    const dDate = new Date(d.Date);
+                    return dDate.getFullYear() === targetMonth.getFullYear() && dDate.getMonth() === targetMonth.getMonth();
+                });
+
+                if (yoyPrevItem && item[key] !== null && yoyPrevItem[key] !== null) {
+                    const valNow = parseFloat(item[key]);
+                    const valPrev = parseFloat(yoyPrevItem[key]);
+                    if (valPrev !== 0) {
+                        newItem._yoy[key] = (((valNow - valPrev) / Math.abs(valPrev)) * 100).toFixed(1);
+                    }
+                }
+            });
+            return newItem;
+        });
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        const displayData = [...data].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+        displayData.forEach(item => {
+            const tr = document.createElement('tr');
+            const isLatestMonth = (item.Date === globalLatestDateStr);
+
+            columnOrder.forEach(key => {
+                const td = document.createElement('td');
+                let val = item[key];
+
+                if (key === 'Date') {
+                    td.innerText = val.substring(0, 7);
+                    td.className = 'date-col';
+                } else {
+                    if (val !== null && val !== undefined) {
+                        const num = parseFloat(val);
+                        let displayText = intColumns.includes(key) ? 
+                            Math.round(num).toLocaleString() : 
+                            num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                        const valSpan = document.createElement('span');
+                        valSpan.innerText = displayText;
+                        if (isLatestMonth && item._isMoMChanged[key]) {
+                            valSpan.className = 'changed-val';
+                        }
+                        td.appendChild(valSpan);
+
+                        if (pctColumns.includes(key)) {
+                            td.innerHTML += `<span class="unit-label">%</span>`;
+                        }
+
+                        if (item._yoy && item._yoy[key]) {
+                            const yoyVal = item._yoy[key];
+                            const color = yoyVal >= 0 ? '#42b883' : '#f85149';
+                            td.innerHTML += `<span class="yoy-label" style="color:${color}">(${yoyVal > 0 ? '+' : ''}${yoyVal}%)</span>`;
+                        }
+                    } else { td.innerText = '-'; }
+                }
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
+
+    function initFilters(data) {
+        if (data.length === 0) return;
+        const dates = data.map(d => new Date(d.Date));
+        const maxDate = new Date(Math.max(...dates));
+        const minDate = new Date(Math.max(...dates));
+        minDate.setFullYear(maxDate.getFullYear() - 3);
+
+        const startInput = document.getElementById('startDate');
+        const endInput = document.getElementById('endDate');
+        const toYearMonth = (date) => date.toISOString().substring(0, 7);
+        
+        startInput.value = toYearMonth(minDate);
+        endInput.value = toYearMonth(maxDate);
+
+        const setupPickerTrigger = (containerId, inputId) => {
+            const container = document.getElementById(containerId);
+            const input = document.getElementById(inputId);
+            container.addEventListener('click', function(e) {
+                if(e.target !== input) {
+                    try { input.showPicker(); } catch (error) { input.focus(); }
+                }
+            });
+        };
+        
+        document.getElementById('filterContainer').addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                // 點擊空白處可觸發
+            }
+        });
+
+        const filterAction = () => {
+            const start = startInput.value;
+            const end = endInput.value;
+            const filtered = rawMacroData.filter(d => {
+                const dMonth = d.Date.substring(0, 7);
+                return dMonth >= start && dMonth <= end;
+            });
+            renderTable(filtered);
+        };
+
+        startInput.onchange = filterAction;
+        endInput.onchange = filterAction;
+        filterAction();
+    }
+
+    // 模擬數據載入
+    fetch('economy_data.json')
+        .then(res => res.json())
+        .then(data => {
+            rawMacroData = calculateYoYAndChanges(data);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('macroTable').style.display = 'table';
+            initFilters(rawMacroData);
+        })
+        .catch(err => {
+            document.getElementById('loading').innerHTML = `<span style="color:var(--neg-color)">ERROR LOADING DATA (需有 economy_data.json)</span>`;
+        });
+</script>
+
+</body>
+</html>
