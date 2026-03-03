@@ -1,18 +1,34 @@
 [
     {
+        "Date":"2026-03",
+        "CPI":326.59,
+        "PCE":128.6,
+        "M2":22442.1,
+        "Fed_Funds":3.64,
+        "US_10Y":3.97,
+        "US_2Y":3.38,
+        "Yield_Spread":0.58,
+        "GDP":31490.07,
+        "Ind_Prod":102.34,
+        "Unemployment":4.3,
+        "Non_Farm":158627.0,
+        "VIX":19.86,
+        "Sentiment":56.4
+    },
+    {
         "Date":"2026-02",
         "CPI":326.59,
         "PCE":128.6,
         "M2":22442.1,
         "Fed_Funds":3.64,
-        "US_10Y":4.02,
-        "US_2Y":3.42,
+        "US_10Y":3.97,
+        "US_2Y":3.38,
         "Yield_Spread":0.59,
         "GDP":31490.07,
         "Ind_Prod":102.34,
         "Unemployment":4.3,
         "Non_Farm":158627.0,
-        "VIX":18.63,
+        "VIX":19.86,
         "Sentiment":56.4
     },
     {
