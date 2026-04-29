@@ -1905,19 +1905,19 @@
     },
     {
         "Date":"2016-05",
-        "CPI":239.56,
-        "PCE":98.15,
-        "M2":12802.0,
-        "Fed_Funds":0.37,
+        "CPI":null,
+        "PCE":null,
+        "M2":null,
+        "Fed_Funds":null,
         "US_10Y":1.84,
         "US_2Y":0.87,
         "Yield_Spread":0.97,
         "GDP":null,
-        "Ind_Prod":98.42,
-        "Unemployment":4.8,
-        "Non_Farm":143900.0,
+        "Ind_Prod":null,
+        "Unemployment":null,
+        "Non_Farm":null,
         "VIX":14.19,
-        "Sentiment":94.7
+        "Sentiment":null
     },
     {
         "Date":"2016-04",
