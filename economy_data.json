@@ -1905,19 +1905,19 @@
     },
     {
         "Date":"2016-08",
-        "CPI":240.54,
-        "PCE":98.48,
-        "M2":12986.7,
-        "Fed_Funds":0.4,
+        "CPI":null,
+        "PCE":null,
+        "M2":null,
+        "Fed_Funds":null,
         "US_10Y":1.58,
         "US_2Y":0.8,
         "Yield_Spread":0.78,
         "GDP":null,
-        "Ind_Prod":98.85,
-        "Unemployment":4.9,
-        "Non_Farm":144661.0,
+        "Ind_Prod":null,
+        "Unemployment":null,
+        "Non_Farm":null,
         "VIX":13.42,
-        "Sentiment":89.8
+        "Sentiment":null
     },
     {
         "Date":"2016-07",
