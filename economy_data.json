@@ -26,8 +26,8 @@
         "Yield_Spread":0.38,
         "GDP":33010.04,
         "Ind_Prod":103.95,
-        "Unemployment":4.2,
-        "Non_Farm":159044.0,
+        "Unemployment":4.1,
+        "Non_Farm":159293.0,
         "VIX":19.42,
         "Sentiment":48.1
     },
@@ -59,7 +59,7 @@
         "GDP":33010.04,
         "Ind_Prod":103.27,
         "Unemployment":4.1,
-        "Non_Farm":159015.0,
+        "Non_Farm":159068.0,
         "VIX":14.92,
         "Sentiment":51.7
     },
